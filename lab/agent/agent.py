@@ -146,20 +146,35 @@ def ban_ip(ip, reason="Comportamiento anómalo detectado"):
         return False
 
 def follow_eve(filepath):
-    """Monitorea el archivo eve.json de Suricata de forma continua (estilo tail -F)."""
+    """Monitorea el archivo eve.json de Suricata de forma continua soportando truncado y rotación."""
     while not os.path.exists(filepath):
         print(f"[SecOps Agent] Esperando creación de {filepath}...")
         time.sleep(1)
-    
+
     print(f"[SecOps Agent] Conectado a {filepath}. Escuchando flujo de eventos...")
-    with open(filepath, "r") as f:
+    f = open(filepath, "r")
+    try:
         f.seek(0, os.SEEK_END)
+        current_ino = os.fstat(f.fileno()).st_ino
         while True:
             line = f.readline()
-            if not line:
-                time.sleep(0.2)
+            if line:
+                yield line
                 continue
-            yield line
+
+            try:
+                st = os.stat(filepath)
+                if st.st_ino != current_ino:
+                    f.close()
+                    f = open(filepath, "r")
+                    current_ino = os.fstat(f.fileno()).st_ino
+                elif st.st_size < f.tell():
+                    f.seek(0, os.SEEK_SET)
+            except FileNotFoundError:
+                pass
+            time.sleep(0.2)
+    finally:
+        f.close()
 
 # Servidor HTTP interno de telemetría para NOC / Grafana
 class TelemetryHandler(BaseHTTPRequestHandler):

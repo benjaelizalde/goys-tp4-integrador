@@ -26,8 +26,6 @@ outputs:
             packet: yes
             http-body: yes
             tagged-packets: yes
-        - http:
-            extended: yes
 
 default-rule-path: /var/lib/suricata/rules
 rule-files:
@@ -54,5 +52,5 @@ logging:
         enabled: yes
     - file:
         enabled: yes
-        level: info
+        level: warning
         filename: suricata.log
