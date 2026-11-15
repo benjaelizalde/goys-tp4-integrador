@@ -226,15 +226,19 @@
     .results-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 24pt;
+      font-size: 22pt;
     }
 
     .results-table th,
     .results-table td {
       border: 1.2mm solid var(--c-border);
-      padding: 5.5mm 4.5mm;
+      padding: 5mm 3.5mm;
       text-align: left;
       line-height: 1.25;
+    }
+
+    .results-table td:not(:first-child) {
+      white-space: nowrap;
     }
 
     .results-table th {
@@ -482,7 +486,7 @@
               <tr>
                 <td>SQLi (UNION)</td>
                 <td>SID 1000001</td>
-                <td>886 ms</td>
+                <td>~880 ms</td>
                 <td><span class="badge-drop">DROP</span></td>
               </tr>
               <tr>

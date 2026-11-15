@@ -27,7 +27,7 @@ El presente proyecto aborda una problemática operativa frecuente en la gestión
 
 Para resolver esta brecha, diseñamos e implementamos una **Plataforma Integrada NOC/SOC** basada en servicios contenerizados con Docker Compose. La solución combina inspección de tráfico de red en tiempo real mediante **Suricata IDS**, un **agente de respuesta automatizada en Python integrado con la API de Groq** (modelo `qwen/qwen3.8-27b`, con soporte de contingencia heurística local) y un mecanismo de contención activa que inyecta reglas de bloqueo en el firewall del kernel Linux (`iptables`, cadenas `FORWARD` y `DOCKER-USER`). La telemetría operativa, los incidentes clasificados y el estado de mitigación se correlacionan en tiempo real mediante **Prometheus y Grafana**.
 
-Las pruebas de laboratorio demostraron que, frente a ataques web como inyección SQL (`UNION SELECT`), escaneos automatizados (`sqlmap`) y *path traversal* (`/etc/passwd`), la plataforma detecta la firma, clasifica el incidente y aísla la IP agresora en aproximadamente **1 segundo** (latencia LLM medida de 886,4 ms en SQLi). Como resultado, las conexiones del atacante caducan (HTTP 000) mientras los clientes legítimos continúan operando con **100 % de disponibilidad** (HTTP 200 OK, 2,1 ms promedio).
+Las pruebas de laboratorio demostraron que, frente a ataques web como inyección SQL (`UNION SELECT`), escaneos automatizados (`sqlmap`) y *path traversal* (`/etc/passwd`), la plataforma detecta la firma, clasifica el incidente y aísla la IP agresora en aproximadamente **1 segundo** (latencia LLM de ~880 ms en SQLi). Como resultado, las conexiones del atacante caducan (HTTP 000) mientras los clientes legítimos continúan operando con **100 % de disponibilidad** (HTTP 200 OK, 2,1 ms promedio).
 
 ## 2. Arquitectura de la solución
 
@@ -135,7 +135,7 @@ Previo a la inyección de ataques, se validó la línea base ejecutando la opci�
 
 ### 4.2. Pruebas de segmentación
 
-Se evaluó el aislamiento selectivo ejecutando la demostración completa (opción 6) desde `demo_attacker` (`172.28.0.99`) mediante `demo/simular_ataque.sh`. Como muestran las capturas en vivo (`Figura 3` y `Figura 4`), tras validar el tráfico legítimo (`HTTP 200 OK`), el payload de inyección SQL (`UNION SELECT`) dispara la firma `SID 1000001` en Suricata; `aiops_agent` obtiene el dictamen JSON `BLOCK` (`HIGH`, confianza `0.95`) desde Groq (latencia observada entre `886,4 ms` y `2111,9 ms` según carga de API) e inserta las reglas `DROP` en `FORWARD` y `DOCKER-USER`.
+Se evaluó el aislamiento selectivo ejecutando la demostración completa (opción 6) desde `demo_attacker` (`172.28.0.99`) mediante `demo/simular_ataque.sh`. Como muestran las capturas en vivo (`Figura 3` y `Figura 4`), tras validar el tráfico legítimo (`HTTP 200 OK`), el payload de inyección SQL (`UNION SELECT`) dispara la firma `SID 1000001` en Suricata; `aiops_agent` obtiene el dictamen JSON `BLOCK` (`HIGH`, confianza `0.95`) desde Groq (latencia de ~880 ms en promedio, con picos de hasta `2111,9 ms` según carga de API) e inserta las reglas `DROP` en `FORWARD` y `DOCKER-USER`.
 
 ![Figura 3: Ejecución de la demo (parte 1): línea base legítima, alerta de Suricata y dictamen BLOCK de Groq en aiops_agent.](../capturas/demo-1.png){.captura}
 
