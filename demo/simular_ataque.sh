@@ -62,6 +62,19 @@ exec_curl_status() {
     fi
 }
 
+# Verifica que el atacante no esté ya bloqueado antes de lanzar un ataque nuevo
+ensure_attacker_unblocked() {
+    local pre_status
+    pre_status=$(exec_curl_status "/")
+    if [ "$pre_status" != "200" ]; then
+        echo -e "  ${YELLOW}⚠️  La IP del atacante ya está bloqueada en firewall (HTTP ${pre_status}) — no se envía el ataque.${NC}"
+        echo -e "  ${CYAN}ℹ️  Ejecutá la opción 7 (Resetear Reglas de Firewall) antes de probar otro ataque.${NC}"
+        echo ""
+        return 1
+    fi
+    return 0
+}
+
 banner() {
     clear
     echo -e "${CYAN}======================================================================${NC}"
@@ -86,6 +99,7 @@ test_legitimate() {
 }
 
 test_sqli() {
+    ensure_attacker_unblocked || return
     echo -e "${YELLOW}▶ [2/3] Inyectando Vector Malicioso: Inyección SQL (SQLi)...${NC}"
     echo -e "  Payload: ${CYAN}/?id=1%20UNION%20SELECT%20null,username,password%20FROM%20users${NC}"
     
@@ -114,6 +128,7 @@ test_sqli() {
 }
 
 test_recon() {
+    ensure_attacker_unblocked || return
     echo -e "${YELLOW}▶ [Ataque Reconocimiento] Escáner automatizado con User-Agent sospechoso (sqlmap)...${NC}"
     exec_curl "/" "-A 'sqlmap/1.8.2#stable'" > /dev/null 2>&1
     echo -e "  Ataque enviado con User-Agent 'sqlmap'. Esperando remediación..."
@@ -137,6 +152,7 @@ test_recon() {
 }
 
 test_path_traversal() {
+    ensure_attacker_unblocked || return
     echo -e "${YELLOW}▶ [Ataque LFI] Intento de acceso a archivo del sistema (/etc/passwd)...${NC}"
     exec_curl "/admin/view?file=/etc/passwd" > /dev/null 2>&1
     echo -e "  Payload enviado. Esperando dictamen de la IA..."
