@@ -135,11 +135,11 @@ Previo a la inyección de ataques, se validó la línea base ejecutando la opci�
 
 ### 4.2. Pruebas de segmentación
 
-Se evaluó el aislamiento selectivo ejecutando la demostración completa (opción 6) desde `demo_attacker` (`172.28.0.99`) mediante `demo/simular_ataque.sh`. Como muestran las capturas en vivo (`Figura 3` y `Figura 4`), tras validar el tráfico legítimo (`HTTP 200 OK`), el payload de inyección SQL (`UNION SELECT`) dispara la firma `SID 1000001` en Suricata; `aiops_agent` obtiene el dictamen JSON `BLOCK` (`HIGH`, confianza `0.95`) desde Groq (latencia de ~880 ms en promedio, con picos de hasta `2111,9 ms` según carga de API) e inserta las reglas `DROP` en `FORWARD` y `DOCKER-USER`.
+Se evaluó el aislamiento selectivo ejecutando la demostración completa (opción 6) desde `demo_attacker` (`172.28.0.99`) mediante `demo/simular_ataque.sh`. Como muestran las capturas en vivo (`Figura 3` y `Figura 4`), tras validar el tráfico legítimo (`HTTP 200 OK`), el payload de inyección SQL (`UNION SELECT`) dispara la firma `SID 1000001` en Suricata; `aiops_agent` obtiene el dictamen JSON `BLOCK` (`HIGH`, confianza `0.95`) desde Groq (latencia de ~880 ms en promedio) e inserta las reglas `DROP` en `FORWARD` y `DOCKER-USER`.
 
-![Figura 3: Ejecución de la demo (parte 1): línea base legítima, alerta de Suricata y dictamen BLOCK de Groq en aiops_agent.](../capturas/demo-1.png){.captura}
+![Figura 3: Ejecución de la demo (opción 1): verificación de línea base con tráfico legítimo (HTTP 200 OK) y panel NOC en Grafana sin bloqueos activos.](../capturas/demo-1.png){.captura}
 
-![Figura 4: Ejecución de la demo (parte 2): verificación de bloqueo (Drop/Timeout), consulta a /status y actualización en Grafana.](../capturas/demo-2.png){.captura}
+![Figura 4: Ejecución de la demo (opción 2): inyección SQL (SID 1000001), dictamen BLOCK de Groq en 583,0 ms, aislamiento en iptables y actualización del Timeline en Grafana.](../capturas/demo-2.png){.captura}
 
 Inmediatamente después del bloqueo, el atacante queda aislado (`HTTP 000` / timeout) mientras los clientes legítimos continúan accediendo a `http://localhost:8080/` con `HTTP 200 OK`.
 
