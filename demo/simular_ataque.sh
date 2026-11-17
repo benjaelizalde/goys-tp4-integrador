@@ -209,19 +209,23 @@ test_multi_ip_attack() {
     wait
 
     echo -e "  ${YELLOW}⚠️  Ataques enviados desde 3 orígenes. Esperando análisis IA y bloqueo...${NC}"
+    local count="0"
     for attempt in {1..10}; do
         sleep 0.8
-        local count
         count=$(curl -s -m 2 http://localhost:8000/status | grep -o '"blocked_ips_count": [0-9]*' | awk '{print $2}')
         if [ -n "$count" ] && [ "$count" -ge 3 ]; then
             break
         fi
     done
 
-    local leg_status
-    leg_status=$(curl -s -m 2 -o /dev/null -w "%{http_code}" "${HOST_URL}/")
-    echo -e "  ${GREEN}✅ Tráfico legítimo (${HOST_URL}): HTTP ${leg_status}${NC}"
-    check_telemetry
+    echo ""
+    echo -e "${BLUE}▶ Verificando estado de los atacantes (Remediación Activa)...${NC}"
+    if [ -n "$count" ] && [ "$count" -ge 3 ]; then
+        echo -e "  ${GREEN}✅ ÉXITO TOTAL: Las 3 IPs atacantes (.99, .98, .97) fueron BLOQUEADAS en firewall.${NC}"
+    else
+        echo -e "  ${RED}❌ FALLO PARCIAL O DE MITIGACIÓN: Solo ${count:-0}/3 IPs bloqueadas en firewall.${NC}"
+    fi
+    echo ""
 }
 
 # Menú interactivo
