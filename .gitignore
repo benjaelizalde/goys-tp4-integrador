@@ -16,10 +16,12 @@ Thumbs.db
 credentials*
 *credenciales*
 
-# Temporales / backup / logs
+# Temporales / backup / logs / Python cache
 *.tmp
 *.bak
 *.log
 *.rsc.bak
+__pycache__/
+*.py[cod]
 lab/suricata/logs/*
 !lab/suricata/logs/.gitkeep

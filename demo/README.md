@@ -107,6 +107,7 @@ Cuando se acerque el docente o visitante al stand, sigan estos pasos:
 ### Acto 5: Reset para el Siguiente Profesor
 - **Qué hacer:** En la **Ventana 1**, elegí la **Opción 7** (Resetear Reglas de Firewall).
 - **Qué hace:** Limpia las reglas de `iptables` y vacía la telemetría del agente en 1 segundo, dejando todo listo para repetir la demo con otra persona.
+- **Nota de mejora futura (no implementada):** En el prototipo el bloqueo permanece activo hasta ejecutar este `/reset` manual para poder mostrarlo en vivo; en un entorno productivo se reemplazaría por una **cuarentena temporal con TTL automático** (por ejemplo usando `ipset`/`nftables` con expiración de 15–30 minutos) para evitar bloqueos permanentes sobre IPs dinámicas o NAT compartido.
 
 ---
 
