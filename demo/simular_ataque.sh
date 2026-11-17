@@ -187,11 +187,41 @@ check_telemetry() {
 
 reset_firewall() {
     echo -e "${YELLOW}▶ Reseteando reglas de filtrado en FORWARD y DOCKER-USER...${NC}"
-    sudo iptables -D FORWARD -s 172.28.0.99 -j DROP 2>/dev/null
-    sudo iptables -D DOCKER-USER -s 172.28.0.99 -j DROP 2>/dev/null
+    for ip in 172.28.0.97 172.28.0.98 172.28.0.99; do
+        while sudo iptables -D FORWARD -s "$ip" -j DROP 2>/dev/null; do :; done
+        while sudo iptables -D DOCKER-USER -s "$ip" -j DROP 2>/dev/null; do :; done
+    done
     curl -s http://localhost:8000/reset > /dev/null 2>&1
     echo -e "${GREEN}✅ Firewall y telemetría reseteados. Todas las IPs pueden acceder nuevamente.${NC}"
     echo ""
+}
+
+test_multi_ip_attack() {
+    ensure_attacker_unblocked || return
+    echo -e "${YELLOW}▶ [Ataque Multi-IP / Botnet Simulada] Lanzando SQLi desde 3 IPs distintas (.99, .98, .97)...${NC}"
+
+    local payload="/?id=1%20UNION%20SELECT%20null,username,password%20FROM%20users"
+    exec_curl "$payload" > /dev/null 2>&1 &
+    for ip in 172.28.0.98 172.28.0.97; do
+        docker run --rm --network br-monitored --ip "$ip" alpine/curl:latest \
+            curl -s -m 3 "${VICTIM_URL}${payload}" > /dev/null 2>&1 &
+    done
+    wait
+
+    echo -e "  ${YELLOW}⚠️  Ataques enviados desde 3 orígenes. Esperando análisis IA y bloqueo...${NC}"
+    for attempt in {1..10}; do
+        sleep 0.8
+        local count
+        count=$(curl -s -m 2 http://localhost:8000/status | grep -o '"blocked_ips_count": [0-9]*' | awk '{print $2}')
+        if [ -n "$count" ] && [ "$count" -ge 3 ]; then
+            break
+        fi
+    done
+
+    local leg_status
+    leg_status=$(curl -s -m 2 -o /dev/null -w "%{http_code}" "${HOST_URL}/")
+    echo -e "  ${GREEN}✅ Tráfico legítimo (${HOST_URL}): HTTP ${leg_status}${NC}"
+    check_telemetry
 }
 
 # Menú interactivo
@@ -206,9 +236,10 @@ while true; do
     echo "  5) Ver Telemetría e Incidentes en vivo (API Agente)"
     echo "  6) Ejecutar Demo Completa Automatizada (1 -> 2 -> Verificación)"
     echo "  7) Resetear Reglas de Firewall (Desbloquear IPs)"
+    echo "  8) Simular Ataque Multi-IP / Botnet (3 IPs: .99, .98, .97)"
     echo "  0) Salir"
     echo ""
-    read -p "Opción [0-7]: " opcion
+    read -p "Opción [0-8]: " opcion
 
     case $opcion in
         1)
@@ -241,6 +272,10 @@ while true; do
             ;;
         7)
             reset_firewall
+            read -p "Presione ENTER para continuar..."
+            ;;
+        8)
+            test_multi_ip_attack
             read -p "Presione ENTER para continuar..."
             ;;
         0)
