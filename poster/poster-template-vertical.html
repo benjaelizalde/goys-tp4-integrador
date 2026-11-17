@@ -160,15 +160,15 @@
 
     .header-meta strong { color: #ffffff; }
 
-    /* ── 2. CUERPO PRINCIPAL (izq: 1 y 3 / der: topología / abajo: 4 y 5) ── */
+    /* ── 2. CUERPO PRINCIPAL (arriba: 1 ancho completo / medio: 2 izq, 3 der / abajo: 4 y 5) ── */
     .content {
       padding: 8mm 18mm;
       display: grid;
-      grid-template-columns: 0.92fr 1.08fr;
-      grid-template-rows: 0.78fr 1fr auto;
+      grid-template-columns: 1.14fr 0.86fr;
+      grid-template-rows: auto 1fr auto;
       grid-template-areas:
-        "prob  topo"
-        "flujo topo"
+        "prob  prob"
+        "topo  flujo"
         "res   concl";
       gap: 8mm;
       flex: 1;
@@ -313,31 +313,95 @@
       text-transform: uppercase;
     }
 
-    .area-prob ul {
-      font-size: 29pt;
-      line-height: 1.56;
+    .prob-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6mm;
     }
 
-    .area-prob li {
-      margin-bottom: 10mm;
+    .prob-item {
+      background: var(--c-neutral);
+      border: 1.2mm solid var(--c-border);
+      border-left: 3.5mm solid var(--c-accent);
+      border-radius: 3mm;
+      padding: 4.5mm 6mm;
+      font-size: 25pt;
+      line-height: 1.38;
+      color: var(--c-primary);
     }
 
-    .area-flujo ol {
-      font-size: 27.5pt;
-      line-height: 1.52;
+    .prob-item.is-problem {
+      border-left-color: #b91c1c;
     }
 
-    .area-flujo li {
-      margin-bottom: 7.5mm;
+    .flow-diagram {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.5mm;
+    }
+
+    .flow-step {
+      background: var(--c-neutral);
+      border: 1.3mm solid var(--c-border);
+      border-left: 3.5mm solid var(--c-accent);
+      border-radius: 3.5mm;
+      padding: 4.5mm 5.5mm;
+      display: flex;
+      align-items: center;
+      gap: 4.5mm;
+    }
+
+    .flow-step.is-fallback {
+      background: #eff6ff;
+      border-style: dashed;
+      border-color: var(--c-accent);
+      border-left-style: solid;
+    }
+
+    .flow-num {
+      width: 11mm;
+      height: 11mm;
+      border-radius: 50%;
+      background: var(--c-primary);
+      color: #ffffff;
+      font-size: 22pt;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .flow-text {
+      font-size: 22pt;
+      line-height: 1.28;
+      color: var(--c-primary);
+    }
+
+    .flow-text strong {
+      display: block;
+      font-size: 24pt;
+      color: var(--c-primary);
+      margin-bottom: 0.8mm;
+    }
+
+    .flow-arrow {
+      text-align: center;
+      font-size: 24pt;
+      font-weight: 900;
+      line-height: 0.85;
+      color: var(--c-accent);
     }
 
     .area-concl ul {
-      font-size: 26pt;
-      line-height: 1.48;
+      font-size: 25pt;
+      line-height: 1.46;
     }
 
     .area-concl li {
-      margin-bottom: 7mm;
+      margin-bottom: 6.5mm;
     }
 
     /* ── 3. PIE DE PÁGINA (QR solo abajo) ── */
@@ -407,21 +471,59 @@
 
         <section class="section-card area-prob">
           <h3>1. Problema y Objetivo</h3>
-          <ul>
-            <li><strong>Problema:</strong> NOC y SOC aislados; respuesta manual lenta.</li>
-            <li><strong>Objetivo:</strong> Detectar, clasificar y bloquear ataques en <strong>&lt; 1 s</strong> sin cortar clientes válidos.</li>
-          </ul>
+          <div class="prob-grid">
+            <div class="prob-item is-problem">
+              <strong>Problema:</strong> NOC y SOC operan aislados; la respuesta manual ante intrusiones demora minutos u horas.
+            </div>
+            <div class="prob-item">
+              <strong>Objetivo:</strong> Detectar, clasificar y bloquear ataques en <strong style="white-space: nowrap;">&lt; 1 s</strong> sin cortar clientes válidos.
+            </div>
+          </div>
         </section>
 
         <section class="section-card area-flujo">
           <h3>3. Flujo Automatizado</h3>
-          <ol>
-            <li><strong>Captura:</strong> Suricata analiza <code>br-monitored</code> con <code>local.rules</code>.</li>
-            <li><strong>Análisis IA:</strong> Groq (<code>qwen/qwen3.8-27b</code>) devuelve JSON.</li>
-            <li><strong>Contingencia:</strong> Fallback heurístico offline si no hay internet.</li>
-            <li><strong>Contención:</strong> <code>iptables</code> aplica <code>DROP</code> (con whitelist).</li>
-            <li><strong>NOC en Vivo:</strong> Prometheus y Grafana actualizan cada <code>2s</code>.</li>
-          </ol>
+          <div class="flow-diagram">
+            <div class="flow-step">
+              <div class="flow-num">1</div>
+              <div class="flow-text">
+                <strong>Captura IDS</strong>
+                Suricata analiza <code>br-monitored</code> con <code>local.rules</code>.
+              </div>
+            </div>
+            <div class="flow-arrow">&#8595;</div>
+            <div class="flow-step">
+              <div class="flow-num">2</div>
+              <div class="flow-text">
+                <strong>Análisis IA</strong>
+                Groq (<code>qwen/qwen3.8-27b</code>) devuelve dictamen JSON.
+              </div>
+            </div>
+            <div class="flow-arrow">&#8595;</div>
+            <div class="flow-step is-fallback">
+              <div class="flow-num">3</div>
+              <div class="flow-text">
+                <strong>Contingencia Offline</strong>
+                Fallback heurístico local (<code>0,5 ms</code>) si falla internet.
+              </div>
+            </div>
+            <div class="flow-arrow">&#8595;</div>
+            <div class="flow-step">
+              <div class="flow-num">4</div>
+              <div class="flow-text">
+                <strong>Contención Kernel</strong>
+                <code>iptables</code> aplica <code>DROP</code> (protegiendo whitelist).
+              </div>
+            </div>
+            <div class="flow-arrow">&#8595;</div>
+            <div class="flow-step">
+              <div class="flow-num">5</div>
+              <div class="flow-text">
+                <strong>Observabilidad NOC</strong>
+                Prometheus + Grafana actualizan cada <code>2s</code>.
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="section-card area-topo">

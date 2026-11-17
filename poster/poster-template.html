@@ -160,21 +160,37 @@
 
     .header-meta strong { color: #ffffff; }
 
-    /* ── 2. CUERPO PRINCIPAL (3 Columnas horizontales) ── */
+    /* ── 2. CUERPO PRINCIPAL (izq+centro: 1 arriba, 2+3 abajo / der: 4 y 5 50/50) ── */
     .content {
       padding: 8mm 18mm;
       display: grid;
-      grid-template-columns: 1.02fr 1.48fr 1.1fr;
+      grid-template-columns: 1.92fr 1.08fr;
       gap: 8mm;
       flex: 1;
-      align-content: stretch;
+      min-height: 0;
     }
 
-    .col {
-      display: flex;
-      flex-direction: column;
-      gap: 7mm;
+    .left-zone {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        "prob prob"
+        "topo flujo";
+      gap: 8mm;
+      min-height: 0;
     }
+
+    .right-zone {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 8mm;
+      min-height: 0;
+    }
+
+    .area-prob  { grid-area: prob; }
+    .area-topo  { grid-area: topo; }
+    .area-flujo { grid-area: flujo; }
 
     .section-card {
       background: var(--c-card);
@@ -226,20 +242,103 @@
     }
 
     /* ── TOPOLOGÍA SVG ── */
-    /* El SVG se ajusta al espacio libre (no lo impone), así el pie
-       nunca queda fuera del lienzo en 16:9 ni en A1 */
     .topo-wrap {
       flex: 1;
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       min-height: 0;
     }
 
     .topo-wrap svg {
-      position: absolute;
-      inset: 0;
       width: 100%;
-      height: 100%;
+      height: auto;
+      max-height: 100%;
       display: block;
+    }
+
+    /* ── PROBLEMA Y FLUJO EN RECUADROS ── */
+    .prob-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6mm;
+    }
+
+    .prob-item {
+      background: var(--c-neutral);
+      border: 1.2mm solid var(--c-border);
+      border-left: 3.5mm solid var(--c-accent);
+      border-radius: 3mm;
+      padding: 3.5mm 5.5mm;
+      font-size: 24pt;
+      line-height: 1.32;
+      color: var(--c-primary);
+    }
+
+    .prob-item.is-problem {
+      border-left-color: #b91c1c;
+    }
+
+    .flow-diagram {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1mm;
+    }
+
+    .flow-step {
+      background: var(--c-neutral);
+      border: 1.3mm solid var(--c-border);
+      border-left: 3.5mm solid var(--c-accent);
+      border-radius: 3.5mm;
+      padding: 3.2mm 4.5mm;
+      display: flex;
+      align-items: center;
+      gap: 4mm;
+    }
+
+    .flow-step.is-fallback {
+      background: #eff6ff;
+      border-style: dashed;
+      border-color: var(--c-accent);
+      border-left-style: solid;
+    }
+
+    .flow-num {
+      width: 10mm;
+      height: 10mm;
+      border-radius: 50%;
+      background: var(--c-primary);
+      color: #ffffff;
+      font-size: 21pt;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .flow-text {
+      font-size: 21pt;
+      line-height: 1.24;
+      color: var(--c-primary);
+    }
+
+    .flow-text strong {
+      display: block;
+      font-size: 23pt;
+      color: var(--c-primary);
+      margin-bottom: 0.5mm;
+    }
+
+    .flow-arrow {
+      text-align: center;
+      font-size: 22pt;
+      font-weight: 900;
+      line-height: 0.78;
+      color: var(--c-accent);
     }
 
     /* ── TABLA DE RESULTADOS ── */
@@ -370,34 +469,23 @@
       </div>
     </header>
 
-    <!-- ══════════ CUERPO PRINCIPAL (3 COLUMNAS HORIZONTALES) ══════════ -->
+    <!-- ══════════ CUERPO PRINCIPAL ══════════ -->
     <main class="content">
 
-      <!-- COLUMNA 1: PROBLEMA Y FLUJO -->
-      <div class="col">
-        <section class="section-card">
+      <div class="left-zone">
+        <section class="section-card area-prob">
           <h3>1. Problema y Objetivo</h3>
-          <ul>
-            <li><strong>Problema:</strong> NOC y SOC aislados; respuesta manual lenta.</li>
-            <li><strong>Objetivo:</strong> Detectar, clasificar y bloquear ataques en <strong>&lt; 1 s</strong> sin cortar clientes válidos.</li>
-          </ul>
+          <div class="prob-grid">
+            <div class="prob-item is-problem">
+              <strong>Problema:</strong> NOC y SOC operan aislados; la respuesta manual ante intrusiones demora minutos u horas.
+            </div>
+            <div class="prob-item">
+              <strong>Objetivo:</strong> Detectar, clasificar y bloquear ataques en <strong style="white-space: nowrap;">&lt; 1 s</strong> sin cortar clientes válidos.
+            </div>
+          </div>
         </section>
 
-        <section class="section-card grow">
-          <h3>3. Flujo Automatizado</h3>
-          <ol>
-            <li><strong>Captura:</strong> Suricata analiza <code>br-monitored</code> con <code>local.rules</code>.</li>
-            <li><strong>Análisis IA:</strong> Groq (<code>qwen/qwen3.8-27b</code>) devuelve JSON.</li>
-            <li><strong>Contingencia:</strong> Fallback heurístico offline si no hay internet.</li>
-            <li><strong>Contención:</strong> <code>iptables</code> aplica <code>DROP</code> (con whitelist).</li>
-            <li><strong>NOC en Vivo:</strong> Prometheus y Grafana actualizan cada <code>2s</code>.</li>
-          </ol>
-        </section>
-      </div>
-
-      <!-- COLUMNA 2: TOPOLOGÍA DE RED (SVG NITIDO) -->
-      <div class="col">
-        <section class="section-card grow">
+        <section class="section-card area-topo">
           <h3>2. Topología de Red</h3>
           <div class="topo-wrap">
             <svg viewBox="0 0 980 1100" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Liberation Sans, sans-serif">
@@ -419,7 +507,7 @@
               <!-- Fila 0: actores externos al host -->
               <rect x="15" y="10" width="435" height="110" rx="14" fill="#f0fdf4" stroke="#15803d" stroke-width="4"/>
               <text x="232" y="55" text-anchor="middle" font-size="28" font-weight="bold" fill="#0f2942">Clientes Legítimos</text>
-              <text x="232" y="95" text-anchor="middle" font-size="23" font-weight="bold" fill="#15803d">localhost:8080 → DNAT → .0.10:80</text>
+              <text x="232" y="95" text-anchor="middle" font-size="20" font-weight="bold" fill="#15803d">localhost:8080 → DNAT → .0.10:80</text>
 
               <rect x="570" y="10" width="395" height="110" rx="14" fill="#f8fafc" stroke="#0284c7" stroke-width="4" stroke-dasharray="12,6"/>
               <text x="767" y="55" text-anchor="middle" font-size="28" font-weight="bold" fill="#0f2942">Groq API (Internet)</text>
@@ -442,7 +530,7 @@
 
               <!-- Suricata -> Agente (archivo compartido) -->
               <line x1="470" y1="300" x2="566" y2="300" stroke="#0284c7" stroke-width="4.5" marker-end="url(#arr-blue)"/>
-              <text x="520" y="285" text-anchor="middle" font-size="21" font-weight="bold" fill="#0284c7">eve.json</text>
+              <text x="520" y="285" text-anchor="middle" font-size="18.5" font-weight="bold" fill="#0284c7">eve.json</text>
 
               <!-- Agente <-> Groq -->
               <line x1="767" y1="124" x2="767" y2="211" stroke="#0284c7" stroke-width="4" stroke-dasharray="9,6" marker-start="url(#arr-blue)" marker-end="url(#arr-blue)"/>
@@ -489,12 +577,12 @@
 
               <rect x="494" y="700" width="224" height="160" rx="14" fill="#ffffff" stroke="#0f2942" stroke-width="4"/>
               <text x="606" y="745" text-anchor="middle" font-size="26" font-weight="bold" fill="#0f2942">Prometheus</text>
-              <text x="606" y="785" text-anchor="middle" font-size="22" font-weight="bold" fill="#0284c7">172.28.0.20:9090</text>
+              <text x="606" y="785" text-anchor="middle" font-size="20" font-weight="bold" fill="#0284c7">172.28.0.20:9090</text>
               <text x="606" y="825" text-anchor="middle" font-size="20" fill="#334155">métricas cada 2 s</text>
 
               <rect x="726" y="700" width="224" height="160" rx="14" fill="#ffffff" stroke="#0f2942" stroke-width="4"/>
               <text x="838" y="745" text-anchor="middle" font-size="26" font-weight="bold" fill="#0f2942">Grafana</text>
-              <text x="838" y="785" text-anchor="middle" font-size="22" font-weight="bold" fill="#0284c7">172.28.0.30:3000</text>
+              <text x="838" y="785" text-anchor="middle" font-size="20" font-weight="bold" fill="#0284c7">172.28.0.30:3000</text>
               <text x="838" y="825" text-anchor="middle" font-size="20" fill="#334155">dashboard NOC</text>
 
               <!-- Atacante -> Víctima (mismo segmento L2) -->
@@ -512,15 +600,60 @@
               <text x="345" y="1018" font-size="20" fill="#334155">captura / API</text>
               <line x1="510" y1="1010" x2="565" y2="1010" stroke="#b91c1c" stroke-width="4.5" stroke-dasharray="11,6"/>
               <text x="575" y="1018" font-size="20" fill="#334155">bloqueo iptables</text>
-              <text x="40" y="1062" font-size="20" fill="#475569">Zona punteada: Suricata y Agente usan la red del host; Prometheus llega al Agente por el gateway.</text>
+              <text x="490" y="1062" text-anchor="middle" font-size="18" fill="#475569">Zona punteada: Suricata y Agente usan la red del host; Prometheus llega al Agente por el gateway.</text>
             </svg>
+          </div>
+        </section>
+
+        <section class="section-card area-flujo">
+          <h3>3. Flujo Automatizado</h3>
+          <div class="flow-diagram">
+            <div class="flow-step">
+              <div class="flow-num">1</div>
+              <div class="flow-text">
+                <strong>Captura IDS</strong>
+                Suricata analiza <code>br-monitored</code> con <code>local.rules</code>.
+              </div>
+            </div>
+            <div class="flow-arrow">&#8595;</div>
+            <div class="flow-step">
+              <div class="flow-num">2</div>
+              <div class="flow-text">
+                <strong>Análisis IA</strong>
+                Groq (<code>qwen/qwen3.8-27b</code>) devuelve dictamen JSON.
+              </div>
+            </div>
+            <div class="flow-arrow">&#8595;</div>
+            <div class="flow-step is-fallback">
+              <div class="flow-num">3</div>
+              <div class="flow-text">
+                <strong>Contingencia Offline</strong>
+                Fallback heurístico local (<code>0,5 ms</code>) si falla internet.
+              </div>
+            </div>
+            <div class="flow-arrow">&#8595;</div>
+            <div class="flow-step">
+              <div class="flow-num">4</div>
+              <div class="flow-text">
+                <strong>Contención Kernel</strong>
+                <code>iptables</code> aplica <code>DROP</code> (protegiendo whitelist).
+              </div>
+            </div>
+            <div class="flow-arrow">&#8595;</div>
+            <div class="flow-step">
+              <div class="flow-num">5</div>
+              <div class="flow-text">
+                <strong>Observabilidad NOC</strong>
+                Prometheus + Grafana actualizan cada <code>2s</code>.
+              </div>
+            </div>
           </div>
         </section>
       </div>
 
-      <!-- COLUMNA 3: RESULTADOS Y CONCLUSIONES -->
-      <div class="col">
-        <section class="section-card grow">
+      <!-- COLUMNA DERECHA: 4 Y 5 (50% / 50%) -->
+      <div class="right-zone">
+        <section class="section-card">
           <h3>4. Resultados</h3>
 
           <table class="results-table">
