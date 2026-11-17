@@ -4,6 +4,7 @@ import time
 import subprocess
 import threading
 import re
+import urllib.request
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 # Intentar importar el SDK oficial de Groq
@@ -178,6 +179,14 @@ def follow_eve(filepath):
     finally:
         f.close()
 
+def check_victim_health():
+    """Verifica disponibilidad real del servidor víctima vía HTTP GET."""
+    try:
+        with urllib.request.urlopen(f"http://{VICTIM_IP}:80/", timeout=1) as resp:
+            return 1 if 200 <= resp.status < 400 else 0
+    except Exception:
+        return 0
+
 # Servidor HTTP interno de telemetría para NOC / Grafana
 class TelemetryHandler(BaseHTTPRequestHandler):
     def address_string(self):
@@ -216,13 +225,17 @@ class TelemetryHandler(BaseHTTPRequestHandler):
             self.wfile.write(body)
         elif self.path == "/metrics":
             # Formato Prometheus para consumo del NOC
+            victim_up = check_victim_health()
             output = [
                 "# HELP agent_blocked_ips_total Total de direcciones IP bloqueadas",
                 "# TYPE agent_blocked_ips_total gauge",
                 f"agent_blocked_ips_total {len(BLOCKED_IPS)}",
                 "# HELP agent_incidents_total Total de incidentes procesados",
                 "# TYPE agent_incidents_total counter",
-                f"agent_incidents_total {len(INCIDENT_HISTORY)}"
+                f"agent_incidents_total {len(INCIDENT_HISTORY)}",
+                "# HELP victim_service_up Disponibilidad HTTP real del servidor victima (1 = activo, 0 = caido)",
+                "# TYPE victim_service_up gauge",
+                f"victim_service_up {victim_up}"
             ]
             body = ("\n".join(output) + "\n").encode("utf-8")
             self.send_response(200)

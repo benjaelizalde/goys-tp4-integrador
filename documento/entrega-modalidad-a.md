@@ -139,7 +139,7 @@ Se evaluó el aislamiento selectivo ejecutando la demostración completa (opció
 
 ![Figura 3: Ejecución de la demo (opción 1): verificación de línea base con tráfico legítimo (HTTP 200 OK) y panel NOC en Grafana sin bloqueos activos.](../capturas/demo-1.png){.captura}
 
-![Figura 4: Ejecución de la demo (opción 2): inyección SQL (SID 1000001), dictamen BLOCK de Groq en 583,0 ms, aislamiento en iptables y actualización del Timeline en Grafana.](../capturas/demo-2.png){.captura}
+![Figura 4: Ejecución de la demo (opción 2): inyección SQL (SID 1000001), dictamen BLOCK de Groq en 795,0 ms, aislamiento en iptables y actualización del Timeline en Grafana.](../capturas/demo-2.png){.captura}
 
 Inmediatamente después del bloqueo, el atacante queda aislado (`HTTP 000` / timeout) mientras los clientes legítimos continúan accediendo a `http://localhost:8080/` con `HTTP 200 OK`.
 
