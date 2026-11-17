@@ -107,6 +107,7 @@ Cuando se acerque el docente o visitante al stand, sigan estos pasos:
 ### Acto 5: Reset para el Siguiente Profesor
 - **Qué hacer:** En la **Ventana 1**, elegí la **Opción 7** (Resetear Reglas de Firewall).
 - **Qué hace:** Limpia las reglas de `iptables` y vacía la telemetría del agente en 1 segundo, dejando todo listo para repetir la demo con otra persona.
+- **Nota de mejora futura (no implementada):** En el prototipo el bloqueo permanece activo hasta ejecutar este `/reset` manual para poder mostrarlo en vivo; en un entorno productivo se reemplazaría por una **cuarentena temporal con TTL automático** (por ejemplo usando `ipset`/`nftables` con expiración de 15–30 minutos) para evitar bloqueos permanentes sobre IPs dinámicas o NAT compartido.
 
 ---
 
@@ -123,6 +124,7 @@ Al ejecutar `./demo/simular_ataque.sh`, podés probar diferentes vectores:
 | **`5`** | **Telemetría en Vivo** | Consulta el endpoint JSON del agente (`:8000/status`). |
 | **`6`** | **Demo Completa Automática** | Ejecuta Tráfico Legítimo ➔ Ataque SQLi ➔ Verificación de bloqueo de un solo tirón. |
 | **`7`** | **Resetear Firewall** | Desbloquea todas las IPs y resetea las métricas para reiniciar la demo. |
+| **`8`** | **Ataque Multi-IP (Botnet)** | Dispara SQLi desde 3 IPs distintas (`.99`, `.98`, `.97`) para demostrar bloqueos múltiples en Grafana. |
 
 ---
 
@@ -130,6 +132,9 @@ Al ejecutar `./demo/simular_ataque.sh`, podés probar diferentes vectores:
 
 ### ¿Qué pasa si el día de la feria se corta el WiFi del stand?
 **No hay que preocuparse:** El agente tiene programado un **modo de resiliencia heurística local**. Si la llamada a la nube de Groq falla, el agente evalúa la firma de Suricata en 0.5 ms de forma local y bloquea la IP igualmente. La demo **nunca se va a caer en vivo**.
+
+### ¿La opción 8 (Multi-IP) resuelve un DDoS masivo real?
+**No, es una simulación acotada a 3 IPs.** Sirve para mostrar que el agente aísla múltiples orígenes simultáneamente (y dispara los umbrales de color en Grafana) sin afectar a los clientes legítimos. En un ataque **DDoS volumétrico real** de miles de IPs distintas por segundo, consultar un LLM por cada IP nueva sería un cuello de botella: en producción la primera línea se frena en kernel mediante rate-limiting/sets (`iptables hashlimit`, `nftables` o `eBPF/XDP`) y se reserva el análisis IA para triaje de alertas L7 o anomalías no volumétricas.
 
 ### ¿Cómo verifico manualmente qué IPs están bloqueadas en el firewall?
 ```bash

@@ -32,6 +32,8 @@ WHITELIST_IPS = {
 
 BLOCKED_IPS = set()
 INCIDENT_HISTORY = []
+RECENT_ALERT_KEYS = {}
+DEDUP_WINDOW_SECONDS = 5
 
 # Cliente Groq si hay API Key disponible
 groq_client = None
@@ -204,6 +206,7 @@ class TelemetryHandler(BaseHTTPRequestHandler):
                 subprocess.run(f"iptables -D FORWARD -s {ip} -j DROP", shell=True, stderr=subprocess.DEVNULL)
                 subprocess.run(f"iptables -D DOCKER-USER -s {ip} -j DROP", shell=True, stderr=subprocess.DEVNULL)
             BLOCKED_IPS.clear()
+            RECENT_ALERT_KEYS.clear()
             body = b'{"status": "reset_successful"}'
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -261,7 +264,16 @@ def main():
             if event.get("event_type") == "alert":
                 src_ip = event.get("src_ip")
                 signature = event.get("alert", {}).get("signature", "Sin firma")
-                
+
+                # Deduplicación: evita reconsultar al LLM si la IP ya fue bloqueada o la misma alerta llegó en ráfaga
+                if src_ip in BLOCKED_IPS:
+                    continue
+                dedup_key = (src_ip, signature)
+                now = time.time()
+                if now - RECENT_ALERT_KEYS.get(dedup_key, 0) < DEDUP_WINDOW_SECONDS:
+                    continue
+                RECENT_ALERT_KEYS[dedup_key] = now
+
                 print("\n" + "-" * 70)
                 print(f"[ALERTA SOC] Detectada firma: '{signature}' | Origen: {src_ip}")
                 
