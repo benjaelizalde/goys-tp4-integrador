@@ -165,6 +165,8 @@ figure {
 
 figure img {
   max-width: 92%;
+  max-height: 11.2cm;
+  width: auto;
   height: auto;
   display: block;
   margin: 0 auto;
