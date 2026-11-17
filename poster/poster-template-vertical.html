@@ -52,7 +52,7 @@
     }
 
     @page {
-      size: 594mm 1056mm;
+      size: 594mm 841mm; /* A1 vertical */
       margin: 0;
     }
 
@@ -61,12 +61,24 @@
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      html, body { width: auto; height: auto; overflow: visible; background: none; }
+      html, body {
+        display: block;
+        width: 594mm;
+        height: 841mm;
+        margin: 0;
+        padding: 0;
+        background: none;
+        overflow: hidden;
+      }
       .poster {
         position: static;
         transform: none;
         width: 594mm;
-        height: 1056mm;
+        height: 841mm;
+        max-height: 841mm;
+        margin: 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
       .no-print { display: none !important; }
     }
@@ -148,24 +160,20 @@
 
     .header-meta strong { color: #ffffff; }
 
-    /* ── 2. CUERPO PRINCIPAL (filas: 2 tarjetas / topología / 2 tarjetas) ── */
+    /* ── 2. CUERPO PRINCIPAL (izq: 1 y 3 / der: topología / abajo: 4 y 5) ── */
     .content {
       padding: 8mm 18mm;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-columns: 0.92fr 1.08fr;
+      grid-template-rows: 0.78fr 1fr auto;
       grid-template-areas:
-        "prob  flujo"
-        "topo  topo"
+        "prob  topo"
+        "flujo topo"
         "res   concl";
       gap: 8mm;
       flex: 1;
       min-height: 0;
     }
-
-    /* Las columnas del HTML se "disuelven" para que cada tarjeta
-       se ubique directamente en la grilla */
-    .col { display: contents; }
 
     .area-prob  { grid-area: prob; }
     .area-flujo { grid-area: flujo; }
@@ -199,14 +207,14 @@
 
     .section-card ul,
     .section-card ol {
-      font-size: 25pt;
-      line-height: 1.44;
+      font-size: 27pt;
+      line-height: 1.48;
       padding-left: 9mm;
       color: var(--c-primary);
     }
 
     .section-card li {
-      margin-bottom: 5mm;
+      margin-bottom: 6mm;
     }
 
     .section-card li:last-child {
@@ -223,19 +231,19 @@
     }
 
     /* ── TOPOLOGÍA SVG ── */
-    /* El SVG se ajusta al espacio libre (no lo impone), así el pie
-       nunca queda fuera del lienzo en 16:9 ni en A1 */
     .topo-wrap {
       flex: 1;
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
       min-height: 0;
     }
 
     .topo-wrap svg {
-      position: absolute;
-      inset: 0;
       width: 100%;
-      height: 100%;
+      height: auto;
+      max-height: 100%;
       display: block;
     }
 
@@ -305,6 +313,33 @@
       text-transform: uppercase;
     }
 
+    .area-prob ul {
+      font-size: 29pt;
+      line-height: 1.56;
+    }
+
+    .area-prob li {
+      margin-bottom: 10mm;
+    }
+
+    .area-flujo ol {
+      font-size: 27.5pt;
+      line-height: 1.52;
+    }
+
+    .area-flujo li {
+      margin-bottom: 7.5mm;
+    }
+
+    .area-concl ul {
+      font-size: 26pt;
+      line-height: 1.48;
+    }
+
+    .area-concl li {
+      margin-bottom: 7mm;
+    }
+
     /* ── 3. PIE DE PÁGINA (QR solo abajo) ── */
     .footer {
       background: var(--c-primary);
@@ -367,11 +402,9 @@
       </div>
     </header>
 
-    <!-- ══════════ CUERPO PRINCIPAL (3 COLUMNAS HORIZONTALES) ══════════ -->
+    <!-- ══════════ CUERPO PRINCIPAL (GRILLA VERTICAL) ══════════ -->
     <main class="content">
 
-      <!-- COLUMNA 1: PROBLEMA Y FLUJO -->
-      <div class="col">
         <section class="section-card area-prob">
           <h3>1. Problema y Objetivo</h3>
           <ul>
@@ -390,10 +423,7 @@
             <li><strong>NOC en Vivo:</strong> Prometheus y Grafana actualizan cada <code>2s</code>.</li>
           </ol>
         </section>
-      </div>
 
-      <!-- COLUMNA 2: TOPOLOGÍA DE RED (SVG NITIDO) -->
-      <div class="col">
         <section class="section-card area-topo">
           <h3>2. Topología de Red</h3>
           <div class="topo-wrap">
@@ -416,7 +446,7 @@
               <!-- Fila 0: actores externos al host -->
               <rect x="15" y="10" width="435" height="110" rx="14" fill="#f0fdf4" stroke="#15803d" stroke-width="4"/>
               <text x="232" y="55" text-anchor="middle" font-size="28" font-weight="bold" fill="#0f2942">Clientes Legítimos</text>
-              <text x="232" y="95" text-anchor="middle" font-size="23" font-weight="bold" fill="#15803d">localhost:8080 → DNAT → .0.10:80</text>
+              <text x="232" y="95" text-anchor="middle" font-size="20" font-weight="bold" fill="#15803d">localhost:8080 → DNAT → .0.10:80</text>
 
               <rect x="570" y="10" width="395" height="110" rx="14" fill="#f8fafc" stroke="#0284c7" stroke-width="4" stroke-dasharray="12,6"/>
               <text x="767" y="55" text-anchor="middle" font-size="28" font-weight="bold" fill="#0f2942">Groq API (Internet)</text>
@@ -439,7 +469,7 @@
 
               <!-- Suricata -> Agente (archivo compartido) -->
               <line x1="470" y1="300" x2="566" y2="300" stroke="#0284c7" stroke-width="4.5" marker-end="url(#arr-blue)"/>
-              <text x="520" y="285" text-anchor="middle" font-size="21" font-weight="bold" fill="#0284c7">eve.json</text>
+              <text x="520" y="285" text-anchor="middle" font-size="18.5" font-weight="bold" fill="#0284c7">eve.json</text>
 
               <!-- Agente <-> Groq -->
               <line x1="767" y1="124" x2="767" y2="211" stroke="#0284c7" stroke-width="4" stroke-dasharray="9,6" marker-start="url(#arr-blue)" marker-end="url(#arr-blue)"/>
@@ -486,12 +516,12 @@
 
               <rect x="494" y="700" width="224" height="160" rx="14" fill="#ffffff" stroke="#0f2942" stroke-width="4"/>
               <text x="606" y="745" text-anchor="middle" font-size="26" font-weight="bold" fill="#0f2942">Prometheus</text>
-              <text x="606" y="785" text-anchor="middle" font-size="22" font-weight="bold" fill="#0284c7">172.28.0.20:9090</text>
+              <text x="606" y="785" text-anchor="middle" font-size="20" font-weight="bold" fill="#0284c7">172.28.0.20:9090</text>
               <text x="606" y="825" text-anchor="middle" font-size="20" fill="#334155">métricas cada 2 s</text>
 
               <rect x="726" y="700" width="224" height="160" rx="14" fill="#ffffff" stroke="#0f2942" stroke-width="4"/>
               <text x="838" y="745" text-anchor="middle" font-size="26" font-weight="bold" fill="#0f2942">Grafana</text>
-              <text x="838" y="785" text-anchor="middle" font-size="22" font-weight="bold" fill="#0284c7">172.28.0.30:3000</text>
+              <text x="838" y="785" text-anchor="middle" font-size="20" font-weight="bold" fill="#0284c7">172.28.0.30:3000</text>
               <text x="838" y="825" text-anchor="middle" font-size="20" fill="#334155">dashboard NOC</text>
 
               <!-- Atacante -> Víctima (mismo segmento L2) -->
@@ -509,14 +539,11 @@
               <text x="345" y="1018" font-size="20" fill="#334155">captura / API</text>
               <line x1="510" y1="1010" x2="565" y2="1010" stroke="#b91c1c" stroke-width="4.5" stroke-dasharray="11,6"/>
               <text x="575" y="1018" font-size="20" fill="#334155">bloqueo iptables</text>
-              <text x="40" y="1062" font-size="20" fill="#475569">Zona punteada: Suricata y Agente usan la red del host; Prometheus llega al Agente por el gateway.</text>
+              <text x="490" y="1062" text-anchor="middle" font-size="18" fill="#475569">Zona punteada: Suricata y Agente usan la red del host; Prometheus llega al Agente por el gateway.</text>
             </svg>
           </div>
         </section>
-      </div>
 
-      <!-- COLUMNA 3: RESULTADOS Y CONCLUSIONES -->
-      <div class="col">
         <section class="section-card area-res">
           <h3>4. Resultados</h3>
 
@@ -581,7 +608,6 @@
             <li><strong>Resiliencia offline:</strong> operación continua con heurística local.</li>
           </ul>
         </section>
-      </div>
 
     </main>
 
