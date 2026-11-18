@@ -1,0 +1,22 @@
+groups:
+  - name: noc_soc_alerts
+    rules:
+      - alert: VictimServiceDown
+        expr: victim_service_up == 0
+        for: 4s
+        labels:
+          severity: critical
+          plane: noc
+        annotations:
+          summary: "Servidor víctima caído (172.28.0.10:80)"
+          description: "El healthcheck HTTP hacia web_target falló de forma consecutiva."
+
+      - alert: CoordinatedAttackDetected
+        expr: agent_blocked_ips_total >= 3
+        for: 0s
+        labels:
+          severity: high
+          plane: soc
+        annotations:
+          summary: "Múltiples IPs bloqueadas simultáneamente"
+          description: "El agente bloqueó {{ $value }} direcciones IP atacantes en el firewall."
