@@ -41,6 +41,8 @@ services:
       - GROQ_API_KEY=${GROQ_API_KEY}
       - GROQ_MODEL=${GROQ_MODEL:-qwen/qwen3.8-27b}
       - VICTIM_IP=172.28.0.10
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
     volumes:
       - ./agent:/app
       - ./suricata/logs:/var/log/suricata:ro
@@ -56,10 +58,23 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus:/etc/prometheus:ro
     networks:
       monitored_net:
         ipv4_address: 172.28.0.20
+    restart: unless-stopped
+
+  # 4b. Gestor de Alertas NOC/SOC: Alertmanager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: noc_alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks:
+      monitored_net:
+        ipv4_address: 172.28.0.40
     restart: unless-stopped
 
   # 5. Observabilidad NOC: Grafana

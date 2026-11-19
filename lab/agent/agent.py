@@ -4,6 +4,7 @@ import time
 import subprocess
 import threading
 import re
+import html
 import urllib.request
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
@@ -18,6 +19,8 @@ LOG_FILE = os.getenv("LOG_FILE", "/var/log/suricata/eve.json")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
 VICTIM_IP = os.getenv("VICTIM_IP", "172.28.0.10")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
 # IPs protegidas que NUNCA deben ser bloqueadas bajo ninguna circunstancia
 WHITELIST_IPS = {
@@ -27,6 +30,7 @@ WHITELIST_IPS = {
     "172.28.0.10",  # IP del servidor víctima
     "172.28.0.20",  # IP de Prometheus
     "172.28.0.30",  # IP de Grafana
+    "172.28.0.40",  # IP de Alertmanager
     "8.8.8.8",
     "1.1.1.1"
 }
@@ -187,6 +191,29 @@ def check_victim_health():
     except Exception:
         return 0
 
+def send_telegram_async(text):
+    """Envía una notificación a Telegram en segundo plano sin bloquear el flujo principal."""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+
+    def _send():
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = json.dumps({
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True
+        }).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    print("[Telegram] Notificación enviada.")
+        except Exception as e:
+            print(f"[Telegram] No se pudo enviar alerta: {e}")
+
+    threading.Thread(target=_send, daemon=True).start()
+
 # Servidor HTTP interno de telemetría para NOC / Grafana
 class TelemetryHandler(BaseHTTPRequestHandler):
     def address_string(self):
@@ -240,6 +267,64 @@ class TelemetryHandler(BaseHTTPRequestHandler):
             body = ("\n".join(output) + "\n").encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; version=0.0.4")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(body)
+        else:
+            body = b"Not Found"
+            self.send_response(404)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(body)
+
+    def do_POST(self):
+        if self.path == "/alertmanager-webhook":
+            length = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(length) if length > 0 else b"{}"
+            try:
+                data = json.loads(raw.decode("utf-8"))
+                for alert in data.get("alerts", []):
+                    status = str(alert.get("status", "firing")).upper()
+                    labels = alert.get("labels", {})
+                    annotations = alert.get("annotations", {})
+                    name = html.escape(str(labels.get("alertname", "Alerta")))
+                    sev = html.escape(str(labels.get("severity", "info")).upper())
+                    summary = html.escape(str(annotations.get("summary", "")))
+                    desc = html.escape(str(annotations.get("description", "")))
+                    icon = "🚨" if status == "FIRING" else "✅"
+                    print(f"[Alertmanager] {status}: {name} ({sev}) - {summary}")
+                    if status == "RESOLVED":
+                        resolved_details = {
+                            "VictimServiceDown": "El servidor víctima (172.28.0.10:80) volvió a responder HTTP 200 OK.",
+                            "CoordinatedAttackDetected": "El contador de IPs bloqueadas volvió por debajo del umbral."
+                        }
+                        resolved_text = resolved_details.get(
+                            str(labels.get("alertname", "")),
+                            "La condición de alerta dejó de cumplirse."
+                        )
+                        msg = (
+                            f"{icon} <b>ALERTA RESUELTA [RESOLVED]</b>\n"
+                            f"<b>Regla:</b> {name} ({sev})\n"
+                            f"<b>Estado:</b> {html.escape(resolved_text)}"
+                        )
+                    else:
+                        msg = (
+                            f"{icon} <b>ALERTA NOC/SOC [{status}]</b>\n"
+                            f"<b>Regla:</b> {name} ({sev})\n"
+                            f"<b>Resumen:</b> {summary}\n"
+                            f"<b>Detalle:</b> {desc}"
+                        )
+                    send_telegram_async(msg)
+                body = b'{"status": "ok"}'
+                self.send_response(200)
+            except Exception as e:
+                print(f"[Alertmanager] Error procesando webhook: {e}")
+                body = b'{"status": "error"}'
+                self.send_response(400)
+            self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Connection", "close")
             self.end_headers()
@@ -313,7 +398,17 @@ def main():
                 INCIDENT_HISTORY.append(incident_record)
 
                 if decision == "BLOCK":
-                    ban_ip(src_ip, reason=reason)
+                    if ban_ip(src_ip, reason=reason):
+                        model_used = html.escape(str(analysis.get("model", GROQ_MODEL)))
+                        msg = (
+                            f"🛡️ <b>BLOQUEO AUTÓNOMO SOC</b>\n"
+                            f"<b>IP Bloqueada:</b> <code>{html.escape(str(src_ip))}</code>\n"
+                            f"<b>Firma:</b> {html.escape(str(signature))}\n"
+                            f"<b>Severidad:</b> {html.escape(str(severity))} | "
+                            f"<b>Latencia:</b> {latency} ms ({model_used})\n"
+                            f"<b>Justificación IA:</b> {html.escape(str(reason))}"
+                        )
+                        send_telegram_async(msg)
                 else:
                     print(f"[AIOps] Tráfico catalogado como no crítico. No se bloquea.")
 

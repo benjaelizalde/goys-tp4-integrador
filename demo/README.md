@@ -1,7 +1,7 @@
 # Guía de Demostración en Vivo — Plataforma Integrada NOC/SOC (GOYS TP4)
 
 > **Feria de Redes 2026** · Gestión Operativa y Seguridad en Redes
-> Esta guía explica paso a paso cómo levantar el laboratorio, cómo disponer las pantallas y cómo defender la demo frente a los profesores y jurados.
+> Esta guía explica paso a paso cómo levantar el laboratorio, cómo disponer las pantallas y cómo defender la demo.
 
 ---
 
@@ -15,12 +15,13 @@ Este laboratorio demuestra la convergencia entre **NOC** (monitoreo de infraestr
 4. **Respuesta Activa:** El agente aplica reglas `DROP` inmediatas en el firewall del kernel (`iptables FORWARD` y `DOCKER-USER`).
 5. **Aislamiento Comprobado:** El atacante queda bloqueado (0 bps / Timeout), mientras que los clientes legítimos continúan navegando el sitio web normalmente con código HTTP 200 OK.
 6. **Observabilidad:** El panel de **Grafana** y **Prometheus** refleja el incidente y la contención en tiempo real.
+7. **Alertas NOC/SOC en Tiempo Real:** **Alertmanager** y el agente notifican por **Telegram** tanto caídas del servicio víctima (`VictimServiceDown`) o ataques coordinados (`CoordinatedAttackDetected`) como cada bloqueo autónomo con la justificación del LLM.
 
 ---
 
 ## 2. Puesta en Marcha Inicial (Setup en 2 Minutos)
 
-### Paso 1: Configurar la API Key de Groq
+### Paso 1: Configurar la API Key de Groq y Telegram (opcional)
 Dentro del directorio `lab/`, asegurarse de que exista el archivo `.env`:
 ```bash
 cd /home/gns3/goys-tp4-integrador/lab
@@ -30,8 +31,16 @@ Debe contener:
 ```ini
 GROQ_API_KEY=tu_api_key_de_groq_aqui
 GROQ_MODEL=qwen/qwen3.8-27b
+
+# Opcional: notificaciones por Telegram
+TELEGRAM_BOT_TOKEN=token_del_bot_aqui
+TELEGRAM_CHAT_ID=tu_chat_id_aqui
 ```
-*(Si no hay internet en la feria, el agente tiene un modo de contingencia local que seguirá funcionando automáticamente sin internet).*
+
+**Cómo activar las alertas en tu Telegram (1 minuto):**
+1. Buscá el bot **`@noc_soc_utn_bot`** en Telegram y tocá **Iniciar / Start** (o mandale un mensaje como `hola`). *Si no iniciás el chat primero, Telegram no permite que el bot te escriba.*
+2. Para obtener tu `TELEGRAM_CHAT_ID`, hablale a **`@userinfobot`** en Telegram (tocá **Start**) y copiá el número que te devuelve en `Id`. *(Si querés recibir alertas en un grupo, agregá `@noc_soc_utn_bot` al grupo y usá el ID negativo del grupo).*
+3. Colocá en `lab/.env` el `TELEGRAM_BOT_TOKEN` (pedirlo a quien creó el bot) y tu `TELEGRAM_CHAT_ID`.
 
 ### Paso 2: Levantar los Contenedores
 ```bash
@@ -46,38 +55,40 @@ docker compose up -d
 ```bash
 docker compose ps
 ```
-Deben aparecer 6 contenedores activos:
+Deben aparecer 7 contenedores activos:
 - `web_target`: Servidor Nginx víctima (`172.28.0.10:8080`)
 - `soc_suricata`: Sensor IDS en modo sniffer sobre `br-monitored`
 - `aiops_agent`: Agente de remediación y telemetría (`:8000`)
 - `noc_prometheus`: Scraper de métricas (`:9090`)
-- `noc_grafana`: Panel de observabilidad (`:3000`)
+- `noc_alertmanager`: Gestor de alertas NOC/SOC (`:9093`)
+- `noc_grafana`: Panel de observabilidad (`:3000`)(Usuario: `admin` | Password: `admin`)
 - `demo_attacker`: Contenedor atacante de pruebas (`172.28.0.99`)
 
 ---
 
-## 3. Disposición de Pantalla para la Feria (Setup Visual)
+## 3. Disposición de Pantalla (Setup Visual)
 
-Para lograr el **máximo impacto visual** en la estación de la feria, armen 3 ventanas visibles en la pantalla de la laptop o monitor:
+Para lograr el **máximo impacto visual** en una presentación en vivo, tener estas 3 ventanas visibles en la pantalla:
 
 ```
 ┌─────────────────────────────────┬─────────────────────────────────┐
-│ VENTANA 1: Script de Demo       │ VENTANA 2: Logs del Agente IA   │
-│ ./demo/simular_ataque.sh        │ docker logs -f aiops_agent      │
-│ (Menú interactivo con colores)  │ (Muestra a Groq razonando)      │
-├─────────────────────────────────┼─────────────────────────────────┤
-│ VENTANA 3: Dashboard Grafana    │ VENTANA 4: Web de la Víctima    │
-│ http://<IP_VM>:3000             │ http://<IP_VM>:8080             │
-│ (Métricas e incidentes NOC)     │ (Portal corporativo 200 OK)     │
+│ VENTANA 1: Script de Demo       │                                 │
+│ ./demo/simular_ataque.sh        │                                 │
+│ (Menú interactivo con colores)  │  VENTANA 3: Dashboard Grafana   │
+├─────────────────────────────────┤  http://<IP_VM>:3000            │
+│ VENTANA 2: Logs del Agente IA   │  (Ocupando toda la derecha      │
+│ docker logs -f aiops_agent      │   para métricas e incidentes)   │
+│ (Muestra a Groq razonando)      │                                 │
 └─────────────────────────────────┴─────────────────────────────────┘
 ```
+*(Pueden tener `http://<IP_VM>:8080` en otra pestaña del navegador para mostrar que la web víctima sigue en `HTTP 200 OK`).*
 
 > **Nota sobre las URLs:**  
 > Si estás accediendo desde el navegador de tu computadora anfitriona (Windows/Mac) a través de la VM, reemplazá `localhost` por la IP de la VM (por ejemplo `http://192.168.133.130:3000`).
 
 ---
 
-## 4. Guion de la Demo Frente a los Profesores
+## 4. Guion de la Demo
 
 Cuando se acerque el docente o visitante al stand, sigan estos pasos:
 
@@ -104,7 +115,7 @@ Cuando se acerque el docente o visitante al stand, sigan estos pasos:
   - En la **Ventana 3 (Grafana)**, el contador de **IPs Neutralizadas** sube a `1` y el gráfico marca el incidente.
   - En la **Ventana 4**, refrescá el portal web (`:8080`): responde instantáneamente con **HTTP 200 OK**.
 
-### Acto 5: Reset para el Siguiente Profesor
+### Acto 5: Reset para el Siguiente
 - **Qué hacer:** En la **Ventana 1**, elegí la **Opción 7** (Resetear Reglas de Firewall).
 - **Qué hace:** Limpia las reglas de `iptables` y vacía la telemetría del agente en 1 segundo, dejando todo listo para repetir la demo con otra persona.
 - **Nota de mejora futura (no implementada):** En el prototipo el bloqueo permanece activo hasta ejecutar este `/reset` manual para poder mostrarlo en vivo; en un entorno productivo se reemplazaría por una **cuarentena temporal con TTL automático** (por ejemplo usando `ipset`/`nftables` con expiración de 15–30 minutos) para evitar bloqueos permanentes sobre IPs dinámicas o NAT compartido.
@@ -149,8 +160,13 @@ sudo iptables -F FORWARD && sudo iptables -F DOCKER-USER && sudo iptables -A DOC
 curl -s http://127.0.0.1:8000/reset
 ```
 
-### Credenciales de Acceso:
+### ¿Cómo funcionan las alertas por Telegram (Alertmanager vs. Agente SOC)?
+- **Alertas NOC/SOC por métricas (`noc_alertmanager` + `alert.rules.yml`):** Prometheus evalúa `VictimServiceDown` (si `web_target` cae `> 4 s`, podés probarlo con `docker stop web_target`) y `CoordinatedAttackDetected` (`>= 3` IPs bloqueadas, opción `8`). Envía `[FIRING]` al dispararse, recordatorios cada **`15m`** (`repeat_interval: 15m`) mientras la condición siga activa, y `[RESOLVED]` al normalizarse.
+- **Alertas SOC individuales (`aiops_agent`):** Cada vez que se bloquea una IP atacante nueva, el agente envía **una única notificación** (`🛡️ BLOQUEO AUTÓNOMO SOC`) con la firma y la justificación redactada por el LLM, sin repetirse periódicamente.
+
+### Credenciales y Accesos:
 - **Grafana:** `http://<IP_VM>:3000` (Usuario: `admin` | Password: `admin`)
 - **Portal Víctima:** `http://<IP_VM>:8080`
 - **Telemetría Agente:** `http://<IP_VM>:8000/status`
 - **Prometheus:** `http://<IP_VM>:9090`
+- **Alertmanager:** `http://<IP_VM>:9093`
