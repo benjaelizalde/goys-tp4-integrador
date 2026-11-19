@@ -61,12 +61,12 @@ Deben aparecer 7 contenedores activos:
 - `aiops_agent`: Agente de remediación y telemetría (`:8000`)
 - `noc_prometheus`: Scraper de métricas (`:9090`)
 - `noc_alertmanager`: Gestor de alertas NOC/SOC (`:9093`)
-- `noc_grafana`: Panel de observabilidad (`:3000`)
+- `noc_grafana`: Panel de observabilidad (`:3000`)(Usuario: `admin` | Password: `admin`)
 - `demo_attacker`: Contenedor atacante de pruebas (`172.28.0.99`)
 
 ---
 
-## 3. Disposición de Pantalla para la Feria (Setup Visual)
+## 3. Disposición de Pantalla (Setup Visual)
 
 Para lograr el **máximo impacto visual** en una presentación en vivo, tener estas 3 ventanas visibles en la pantalla:
 
